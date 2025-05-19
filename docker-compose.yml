@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: test_app
+    restart: unless-stopped
+    tty: true
+    working_dir: /var/www
+    volumes:
+      - ./src:/var/www
+    networks:
+      - test-network
+
+  vite:
+    image: node:22
+    container_name: test_vite
+    working_dir: /app
+    volumes:
+      - ./src:/app
+    ports:
+      - "5173:5173"
+    command: sh vite_init.sh
+    depends_on:
+      - app
+
+  # Nginx Service
+  webserver:
+    image: nginx
+    container_name: test_nginx
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./src:/var/www
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - test-network
+
+
+# Docker Networks
+networks:
+  test-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  dbdata:
+    driver: local
